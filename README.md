@@ -1,5 +1,7 @@
-# BambuBoard
-Bambu Dashboard for viewing real time data from the Bambu X1 Carbon 3D printer. Are you looking for the best Bambu printer OBS overlay? Scroll to the bottom. 
+# BambuBoard H2D
+Bambu Dashboard for viewing real time data from the Bambu H2D Carbon 3D printer. This is a fork of BambuBoard. H2D is such a different beast that it deserves its own repo. The dashboard will likely have to transfor significantly to work with the H2D configuration. This repo the start of attempting to mold the BambuBoard project to work with H2D.
+
+Are you looking for the best Bambu printer OBS overlay? Scroll to the bottom. 
 Also make sure to check out a live stream here: https://www.youtube.com/channel/UChDOFv_-8TxYOfkteSlvAqA/live
 
 ### For more detailed project information visit: https://t0nyz.com/projects/bambuboard
@@ -186,14 +188,7 @@ List of all widget addresses:
 
 Note: If you want to EDIT notes go to this URL: http://server:8080/widgets/notes/edit.html
 
-# Future Development Plans:
 
-- ~~Celcius / Fahrenheit preference setting~~
-- Rebuild using React?
-- Better settings configuration
-- ~~Add AMS humidty / temp~~
-- ~~AMS Active tray tracking~~
-- Address bug with the "Total Prints" data point, the API does not appear to keep an entire record of all cloud prints. Total print count might always been inaccurate and may need to be removed in future versions.
 
 # Known Limitations:
 
