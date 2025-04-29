@@ -22,9 +22,10 @@ jobs:
     - name: Push Docker image to GitHub Packages
       run: docker push ghcr.io/t0nyz0/bambuboard-h2d:latest
 
-    - name: Make Docker image public automatically
+    - name: Make Docker image public automatically (retry)
       run: |
-        curl -X PATCH https://api.github.com/user/packages/container/bambuboard-h2d/visibility \
+        sleep 10
+        curl -X PATCH https://api.github.com/repos/t0nyz0/BambuBoard-H2D/packages/container/bambuboard-h2d/visibility \
         -H "Authorization: Bearer ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
         -H "Accept: application/vnd.github.v3+json" \
-        -d '{"visibility":"public"}'
+        -d '{"visibility":"public"}' || true
