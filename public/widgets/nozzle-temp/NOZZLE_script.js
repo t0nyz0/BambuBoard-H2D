@@ -1,5 +1,5 @@
 // BambuBoard
-// TZ | 11/20/23
+// TZ | Updated 2024
 
 //-------------------------------------------------------------------------------------------------------------
 const protocol = window.location.protocol; // 'http:' or 'https:'
@@ -16,7 +16,6 @@ const fullServerURL = `${protocol}//${serverURL}:${serverPort}`;
 
 async function loadSettings() {
   try {
-    const serverURL = window.location.hostname;
     const response = await fetch(fullServerURL + "/settings");
     if (response.ok) {
       const data = await response.json();
@@ -31,7 +30,6 @@ loadSettings();
 
 async function retrieveData() {
   const response = await fetch(fullServerURL + "/data.json");
-
   let data = await response.text();
   let telemetryObject = JSON.parse(data);
 
@@ -64,19 +62,57 @@ async function updateUI(telemetryObject) {
     } else if (printStatus === "FINISH") {
       printStatus = "Print Complete";
     } else if (printStatus === "FAILED") {
+      // Handle failed case if needed
     }
 
     /// Nozzle Temp
     let nozzleTargetTemp = 0;
+    let nozzleTargetTempC = 0;
     let nozzleTempPercentage = 1;
-    // Bed Target Temp
-    if (telemetryObject.nozzle_target_temper === 0) {
-      nozzleTargetTemp = "OFF";
+
+    // Set current temp in UI
+
+    var nozzleCurrentTemp = Math.round((telemetryObject.device.extruder.info[0].hnow * 9) / 5 + 32);
+    $("#nozzleCurrentTempF").text(nozzleCurrentTemp);
+    
+    var nozzleCurrentTempC = telemetryObject.device.extruder.info[0].hnow;
+
+    if (nozzleCurrentTempC > 3) {
+      $("#nozzleCurrentTempC").text(nozzleCurrentTempC);
+      $("#nozzleCurrentTempC").show();
+      $("#nozzleCurrentTempF").show();
     } else {
-      nozzleTargetTemp = (telemetryObject.nozzle_target_temper * 9) / 5 + 32;
-      nozzleTempPercentage =
-        (telemetryObject.nozzle_temper / telemetryObject.nozzle_target_temper) *
-        100;
+      $("#nozzleCurrentTemp").hide();
+    }
+
+    log("nozzleCurrentTemp = " + nozzleCurrentTemp);
+
+    let progressNozzleParentWidth = $("#nozzleProgressBarParent").width();
+    log("progressNozzleParentWidth = " + progressNozzleParentWidth);
+
+    // NEW: Read target temp properly from extruder info
+    let extruderTargetC = 0;
+
+    if (telemetryObject.extruder && telemetryObject.extruder.info) {
+     const extruder = telemetryObject.device.extruder.info[0];
+      if (extruder.htar && extruder.htar > 0) {
+          extruderTargetC = extruder.htar;
+      }
+    }
+
+    if (extruderTargetC > 500) {
+      extruderTargetC = extruderTargetC / 1000;
+    }
+
+    if (extruderTargetC < 3) {
+      nozzleTargetTemp = "OFF";
+      nozzleTempPercentage = 0;
+      disableUI();
+    } else {
+      $("#activeTag").show();
+      nozzleTargetTempC = extruderTargetC;
+      nozzleTargetTemp = Math.round((nozzleTargetTempC * 9) / 5 + 32);
+      nozzleTempPercentage = (telemetryObject.nozzle_temper / nozzleTargetTempC) * 100;
     }
 
     if (nozzleTempPercentage > 100) {
@@ -84,32 +120,22 @@ async function updateUI(telemetryObject) {
       nozzleTempPercentage = 100;
     }
 
+    $("#nozzleProgressBar").width((nozzleTempPercentage * progressNozzleParentWidth) / 100);
+
+    if (nozzleTargetTemp === "OFF") {
+      $("#nozzleTargetTempF").text("OFF");
+      $("#nozzleTargetTempC").text("OFF");
+    } else {
+      $("#nozzleTargetTempC").text(Math.round(nozzleTargetTempC));    
+      $("#nozzleTargetTempF").text(nozzleTargetTemp);
+    }
+
     log("nozzleTargetTemp = " + nozzleTargetTemp);
     log("nozzleTempPercentage = " + nozzleTempPercentage);
-
-    // Set target temp in UI
-    $("#nozzleTargetTempF").text(nozzleTargetTemp);
-    $("#nozzleTargetTempC").text(telemetryObject.nozzle_target_temper);    
-
-    // Set current temp in UI
-    var nozzleCurrentTemp = Math.round((telemetryObject.nozzle_temper * 9) / 5 + 32);
-    $("#nozzleCurrentTempF").text(nozzleCurrentTemp);
-    
-    var nozzleCurrentTempC = Math.round(telemetryObject.nozzle_temper);
-    $("#nozzleCurrentTempC").text(nozzleCurrentTempC);
-
-    log("nozzleCurrentTemp = " + nozzleCurrentTemp);
-
-    let progressNozzleParentWidth = $("#nozzleProgressBarParent").width();
-    log("progressNozzleParentWidth = " + progressNozzleParentWidth);
-    $("#nozzleProgressBar").width(
-      (nozzleTempPercentage * progressNozzleParentWidth) / 100
-    );
 
     if (nozzleTargetTemp === "OFF") {
       $("#nozzleProgressBar").css("background-color", "grey");
 
-      $("#nozzleTargetTempC").hide();
       $("#nozzleTargetTempSymbolsF").hide();
       $("#nozzleTargetTempSymbolsC").hide();
     } else {
@@ -162,8 +188,12 @@ async function updateUI(telemetryObject) {
 }
 
 function disableUI() {
+  $("#activeTag").hide();
   $("#nozzleProgressBar").css("background-color", "grey");
-  $("#nozzleTargetTempTempSymbols").hide();
+  $("#nozzleProgressBar").width(0);
+  $("#nozzleTargetTempSymbolsF").hide();
+  $("#nozzleTargetTempSymbolsC").hide();
+  $("#nozzleTargetTempC").hide();
 }
 
 function log(logText) {
@@ -189,7 +219,6 @@ setInterval(async () => {
       disableUI();
     }
   } catch (error) {
-    //console.error(error);
     await sleep(1000);
   }
 }, 1000);

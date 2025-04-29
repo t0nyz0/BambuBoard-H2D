@@ -14,7 +14,7 @@
     You are already logged in. <a href="/" class="alert-link">Go to Dashboard</a>
   </div>
   <div id="notLoggedInMessage" class="alert alert-warning text-center d-none">
-    Please login.
+    Please enter access token from makerworld. <a href="/token.jpg" target="_blank">View Token Image</a>
   </div>
 
   <div class="row g-4">
@@ -28,33 +28,14 @@
           <!-- Login Form -->
           <form id="login-form" class="mb-4">
             <div class="mb-3">
-              <label for="username" class="form-label">Username:</label>
+              <label for="username" class="form-label"><a href="/token.jpg" target="_blank">Access Token:</a> 
+              <div><sub>Login to MakerWorld.com and open up your developer tools in browser, find the cookie labeled "token". This last for 1 year. <a href="/token.jpg" target="_blank">Reference Image</a></sub></div></label>
               <input type="text" id="username" class="form-control" name="username" required />
             </div>
-            <div class="mb-3">
-              <label for="password" class="form-label">Password:</label>
-              <input type="password" id="password" class="form-control" name="password" required />
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Login</button>
+            <button type="submit" class="btn btn-primary w-100">Save Access Token</button>
           </form>
 
-          <!-- Verification Form -->
-          <form id="verification-form" class="mb-4" style="display:none;">
-            <div class="mb-3">
-              <label for="verification-code" class="form-label">Enter Verification Code:</label>
-              <input type="text" id="verification-code" class="form-control" name="verification-code" required />
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Submit Verification Code</button>
-          </form>
-
-          <!-- MFA Form -->
-          <form id="mfa-form" class="mb-3" style="display:none;">
-            <div class="mb-3">
-              <label for="mfa-code" class="form-label">Enter MFA Code:</label>
-              <input type="text" id="mfa-code" class="form-control" name="mfa-code" required />
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Submit MFA Code</button>
-          </form>
+         
         </div>
       </div>
     </div>
@@ -152,9 +133,11 @@
         const data = await response.json();
         const loggedInMessage = document.getElementById('loggedInMessage');
         const notLoggedInMessage = document.getElementById('notLoggedInMessage');
+        document.getElementById('username').value = '';
         if (data.loggedIn) {
           // User already has an access token
           loggedInMessage.classList.remove('d-none');
+          document.getElementById('username').value = data.accessToken || '';
         } else {
           // No token present
           notLoggedInMessage.classList.remove('d-none');
@@ -224,76 +207,24 @@
       }
     });
 
-    // Login and MFA forms remain unchanged
     document.getElementById('login-form').addEventListener('submit', async (event) => {
-      event.preventDefault();
+  event.preventDefault();
 
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
+  const accessToken = document.getElementById('username').value; // Reuse username field to enter token
 
-      const response = await fetch('/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
+  const response = await fetch('/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accessToken })
+  });
 
-      if (response.status === 200) {
-        showModal('Login successful! Access token saved.');
-      } else if (response.status === 401) {
-        const responseData = await response.text();
-        if (responseData.includes('Verification code required')) {
-          showModal('Verification code required. Please check your email.');
-          document.getElementById('login-form').style.display = 'none';
-          document.getElementById('verification-form').style.display = 'block';
-        } else if (responseData.includes('MFA code required')) {
-          showModal('MFA code required. Please enter your MFA code.');
-          document.getElementById('login-form').style.display = 'none';
-          document.getElementById('mfa-form').style.display = 'block';
-        } else {
-          showModal('Login failed. Please try again.');
-        }
-      } else {
-        showModal('Login failed. Please try again.');
-      }
+  if (response.status === 200) {
+    showModal('Token saved successfully! Access granted.', true);
+  } else {
+    showModal('Failed to save token. Please try again.');
+  }
     });
 
-    document.getElementById('verification-form').addEventListener('submit', async (event) => {
-      event.preventDefault();
-
-      const verificationCode = document.getElementById('verification-code').value;
-      const username = document.getElementById('username').value;
-
-      const response = await fetch('/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, code: verificationCode })
-      });
-
-      if (response.ok) {
-        showModal('Verification successful! Access token saved.');
-      } else {
-        showModal('Verification failed. Please try again.');
-      }
-    });
-
-    document.getElementById('mfa-form').addEventListener('submit', async (event) => {
-      event.preventDefault();
-
-      const mfaCode = document.getElementById('mfa-code').value;
-      const username = document.getElementById('username').value;
-
-      const response = await fetch('/mfa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, code: mfaCode })
-      });
-
-      if (response.ok) {
-        showModal('MFA verification successful! Access token saved.');
-      } else {
-        showModal('MFA verification failed. Please try again.');
-      }
-    });
   </script>
 </body>
 </html>

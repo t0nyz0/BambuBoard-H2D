@@ -8,7 +8,6 @@ let printerPort = process.env.BAMBUBOARD_PRINTER_PORT || config.BambuBoard_print
 let printerSN = process.env.BAMBUBOARD_PRINTER_SN || config.BambuBoard_printerSN;
 let printerAccessCode = process.env.BAMBUBOARD_PRINTER_ACCESS_CODE || config.BambuBoard_printerAccessCode;
 let tempSetting = process.env.BAMBUBOARD_TEMP_SETTING || config.BambuBoard_tempSetting;
-let printerType = process.env.BAMBUBOARD_PRINTER_TYPE || config.BambuBoard_printerType || "X1"; // X1, P1, A1
 
 //-------------------------------------------------------------------------------------------------------------
 /// Preferences:
@@ -28,7 +27,6 @@ const fetch = require('node-fetch');
 const cors = require('cors');
 
 const app = express();
-
 app.use(express.json());
 app.use(cors({ origin: '*' })); // CORS setup
 
@@ -106,7 +104,7 @@ app.get('/token-status', async (req, res) => {
     const data = await fsp.readFile(path.join(__dirname, 'accessToken.json'), 'utf-8');
     const tokenData = JSON.parse(data);
     if (tokenData && tokenData.accessToken) {
-      return res.json({ loggedIn: true });
+      return res.json({ loggedIn: true, accessToken: tokenData.accessToken });
     } else {
       return res.json({ loggedIn: false });
     }
@@ -331,42 +329,18 @@ app.get('/profile-info', async (req, res) => {
 let storedTfaKey = null;
 
 app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
+  const accessToken = req.body.accessToken;
 
   try {
-    const authResponse = await fetchWithTimeout('https://api.bambulab.com/v1/user-service/user/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ account: username, password, apiError: '' }),
-    }, 7000);
-
-    const authData = await authResponse.json();
-
-    if (authData.success) {
-      const token = authData.accessToken;
-      await fs.writeFile(tokenFilePath, JSON.stringify({ accessToken: token }), 'utf-8');
-      res.status(200).send('Login successful');
-    } else if (authData.loginType === 'verifyCode') {
-      const sendCodeResponse = await fetch('https://api.bambulab.com/v1/user-service/user/sendemail/code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: username, type: 'codeLogin' })
-      });
-
-      if (sendCodeResponse.ok) {
-        res.status(401).send('Verification code required');
-      } else {
-        throw new Error('Failed to send verification code');
-      }
-    } else if (authData.loginType === 'tfa') {
-      storedTfaKey = authData.tfaKey; // Store the tfaKey for later use
-      res.status(401).send('MFA code required');
-    } else {
-      throw new Error('Authentication failed');
+    if (!accessToken) {
+      throw new Error('No access token provided');
     }
+
+    await fsp.writeFile(tokenFilePath, JSON.stringify({ accessToken }), 'utf-8');
+    res.status(200).send('Access token saved');
   } catch (error) {
     console.error('Error during login:', error);
-    res.status(401).send('Login failed');
+    res.status(400).send('Login failed');
   }
 });
 
@@ -374,50 +348,62 @@ app.post('/mfa', async (req, res) => {
   const { code } = req.body;
 
   const headers = {
-    "Content-Type": "application/json",
+    'User-Agent': 'bambu_network_agent/01.09.05.01',
+    'X-BBL-Client-Name': 'OrcaSlicer',
+    'X-BBL-Client-Type': 'slicer',
+    'X-BBL-Client-Version': '01.09.05.51',
+    'X-BBL-Language': 'en-US',
+    'X-BBL-OS-Type': 'linux',
+    'X-BBL-OS-Version': '6.2.0',
+    'X-BBL-Agent-Version': '01.09.05.01',
+    'X-BBL-Executable-info': '{}',
+    'X-BBL-Agent-OS-Type': 'linux',
+    'accept': 'application/json',
+    'Content-Type': 'application/json'
   };
 
   try {
-    // Perform MFA verification request
     const verifyPayload = {
-      tfaKey: storedTfaKey, // Use the stored tfaKey from the login step
+      tfaKey: storedTfaKey,
       tfaCode: code,
     };
 
-    const tfaResponse = await fetch('https://bambulab.com/api/sign-in/tfa', {
+    const tfaResponse = await cloudscraper({
       method: 'POST',
+      url: 'https://bambulab.com/api/sign-in/tfa',
       headers: headers,
       body: JSON.stringify(verifyPayload),
+      resolveWithFullResponse: true,
     });
 
-    if (!tfaResponse.ok) {
+    if (tfaResponse.statusCode !== 200) {
       throw new Error('MFA verification failed');
     }
 
-    const setCookies = tfaResponse.headers.get('set-cookie');
-
+    const setCookies = tfaResponse.headers['set-cookie'];
     if (!setCookies) {
       throw new Error('No cookies found in response');
     }
 
-    const cookiesArray = setCookies.split(',');
+    const cookiesArray = setCookies.join('; ').split(';');
     const tokenCookie = cookiesArray.find(cookie => cookie.trim().startsWith('token='));
     if (!tokenCookie) {
       throw new Error('Token cookie not found');
     }
 
-    const token = tokenCookie.split('=')[1].split(';')[0];
-
+    const token = tokenCookie.split('=')[1];
     if (!token) {
       throw new Error('Token extraction failed');
     }
-        await fsp.writeFile(tokenFilePath, JSON.stringify({ accessToken: token,  }), 'utf-8');
-        res.status(200).send('MFA verification successful');
-      } catch (error) {
-        console.error('Error during MFA verification:', error);
-        res.status(401).send('MFA verification failed');
-      }
-    });
+
+    await fsp.writeFile(tokenFilePath, JSON.stringify({ accessToken: token }), 'utf-8');
+    res.status(200).send('MFA verification successful');
+
+  } catch (error) {
+    console.error('Error during MFA verification:', error.error || error.message);
+    res.status(401).send('MFA verification failed');
+  }
+});
 
 app.get('/settings', async (req, res) => {
   try {
@@ -627,11 +613,11 @@ function connectClient() {
         });
       } else {
         // Determine if we should send the pushall command
-        const printerModel = printerType || "X1"; // Default to X1
+        const printerModel =  "H2D"; 
         const currentTime = Date.now();
   
         if (
-          printerModel === "X1" || // For X1, always execute the command
+          printerModel === "H2D" || // For X1, always execute the command
           (["P1P", "A1", "P1"].includes(printerModel) &&
             currentTime - lastPushallTime >= PUSHALL_INTERVAL) // For P1 and A1, ensure interval has passed
         ) {
