@@ -23,7 +23,7 @@ async function retrieveData() {
 }
 
 function setVersion(telemetryObject) {
-  $("#versionNumber").text("BambuBoard Version: " + telemetryObject.version);
+  $("#versionNumber").text("BambuBoard H2D v" + telemetryObject.version);
 }
 
 function log(logText) {
