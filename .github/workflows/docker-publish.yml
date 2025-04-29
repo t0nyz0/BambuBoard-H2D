@@ -22,10 +22,25 @@ jobs:
     - name: Push Docker image to GitHub Packages
       run: docker push ghcr.io/t0nyz0/bambuboard-h2d:latest
 
-    - name: Make Docker image public automatically (retry)
+    - name: Make Docker image public automatically
       run: |
-        sleep 30
-        curl -X PATCH https://api.github.com/repos/t0nyz0/BambuBoard-H2D/packages/container/bambuboard-h2d/visibility \
-        -H "Authorization: Bearer ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
-        -H "Accept: application/vnd.github.v3+json" \
-        -d '{"visibility":"public"}' || true
+        echo "Waiting for package to appear..."
+        for i in {1..12}; do
+          sleep 10
+          status_code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/t0nyz0/BambuBoard-H2D/packages/container/bambuboard-h2d)
+          if [ "$status_code" -eq 200 ]; then
+            echo "Package found, setting public visibility..."
+            curl -X PATCH https://api.github.com/repos/t0nyz0/BambuBoard-H2D/packages/container/bambuboard-h2d/visibility \
+              -H "Authorization: Bearer ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -d '{"visibility":"public"}'
+            exit 0
+          else
+            echo "Package not ready yet (HTTP $status_code), retrying..."
+          fi
+        done
+        echo "Failed to make package public after several attempts."
+        exit 1
