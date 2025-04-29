@@ -30,10 +30,10 @@ jobs:
           status_code=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/user/packages/container/bambuboard-h2d)
+            https://api.github.com/users/t0nyz0/packages/container/bambuboard-h2d)
           if [ "$status_code" -eq 200 ]; then
             echo "Package found, setting public visibility..."
-            curl -X PATCH https://api.github.com/user/packages/container/bambuboard-h2d/visibility \
+            curl -X PATCH https://api.github.com/users/t0nyz0/packages/container/bambuboard-h2d/visibility \
               -H "Authorization: Bearer ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \
               -d '{"visibility":"public"}'
