@@ -15,8 +15,9 @@ jobs:
 
     - name: Log in to GitHub Docker registry
       run: echo "${{ secrets.PERSONAL_ACCESS_TOKEN }}" | docker login ghcr.io -u t0nyz0 --password-stdin
+
     - name: Build Docker image
-      run: docker build . -t ghcr.io/t0nyz0/bambuboard-h2d:latest
+      run: docker build . -t ghcr.io/t0nyz0/bambuboard-h2d:latest --label "org.opencontainers.image.source=https://github.com/t0nyz0/BambuBoard-H2D"
 
     - name: Push Docker image to GitHub Packages
       run: docker push ghcr.io/t0nyz0/bambuboard-h2d:latest
