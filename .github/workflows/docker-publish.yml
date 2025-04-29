@@ -14,10 +14,33 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Log in to GitHub Docker registry
-      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      run: echo "${{ secrets.PERSONAL_ACCESS_TOKEN }}" | docker login ghcr.io -u t0nyz0 --password-stdin
 
     - name: Build Docker image
-      run: docker build . -t ghcr.io/${{ github.actor }}/bambuboard:latest
+      run: docker build . -t ghcr.io/t0nyz0/bambuboard-h2d:latest --label "org.opencontainers.image.source=https://github.com/t0nyz0/BambuBoard-H2D"
 
     - name: Push Docker image to GitHub Packages
-      run: docker push ghcr.io/${{ github.actor }}/bambuboard:latest
+      run: docker push ghcr.io/t0nyz0/bambuboard-h2d:latest
+
+    - name: Make Docker image public automatically
+      run: |
+        echo "Waiting for package to appear..."
+        for i in {1..12}; do
+          sleep 10
+          status_code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/users/t0nyz0/packages/container/bambuboard-h2d)
+          if [ "$status_code" -eq 200 ]; then
+            echo "Package found, setting public visibility..."
+            curl -X PATCH https://api.github.com/users/t0nyz0/packages/container/bambuboard-h2d/visibility \
+              -H "Authorization: Bearer ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -d '{"visibility":"public"}'
+            exit 0
+          else
+            echo "Package not ready yet (HTTP $status_code), retrying..."
+          fi
+        done
+        echo "Failed to make package public after several attempts."
+        exit 1
