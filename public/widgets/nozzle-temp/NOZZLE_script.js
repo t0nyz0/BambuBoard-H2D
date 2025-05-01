@@ -66,62 +66,51 @@ async function updateUI(telemetryObject) {
     }
 
     /// Nozzle Temp
-    let nozzleTargetTemp = 0;
-    let nozzleTargetTempC = 0;
+    let nozzleTargetTempF = 0;
+    let nozzleTargetTempC = telemetryObject.nozzle_target_temper;
     let nozzleTempPercentage = 1;
 
     // Set current temp in UI
 
-    var nozzleCurrentTemp = Math.round((telemetryObject.device.extruder.info[0].temp * 9) / 5 + 32);
-    $("#nozzleCurrentTempF").text(nozzleCurrentTemp);
+    // Is nozzle 1 active?
+    if(telemetryObject.device.extruder.info[0].stat != 0)
+    {
+        $("#activeTag").show();
+
+        var nozzleCurrentTempF = Math.round((telemetryObject.nozzle_temper * 9) / 5 + 32);
+        $("#nozzleCurrentTempF").text(nozzleCurrentTempF);
+
+        var nozzleCurrentTempC = telemetryObject.nozzle_temper;
+        if (nozzleCurrentTempC > 3) {
+          $("#nozzleCurrentTempC").text(nozzleCurrentTempC);
+          $("#nozzleCurrentTempC").show();
+          $("#nozzleCurrentTempF").show();
+        } else {
+          $("#nozzleCurrentTemp").hide();
+        }
+
+        log("nozzleCurrentTempF = " + nozzleCurrentTempF);
+        nozzleTempPercentage = (telemetryObject.nozzle_temper / nozzleTargetTempC) * 100;
+        let progressNozzleParentWidth = $("#nozzleProgressBarParent").width();
+        log("progressNozzleParentWidth = " + progressNozzleParentWidth);
+
+        if (nozzleTempPercentage > 100) {
+          log("Nozzle percentage over 100, adjusting..." + nozzleTempPercentage);
+          nozzleTempPercentage = 100;
+        }
     
-    var nozzleCurrentTempC = telemetryObject.device.extruder.info[0].temp;
+        $("#nozzleProgressBar").width((nozzleTempPercentage * progressNozzleParentWidth) / 100);
 
-    if (nozzleCurrentTempC > 3) {
-      $("#nozzleCurrentTempC").text(nozzleCurrentTempC);
-      $("#nozzleCurrentTempC").show();
-      $("#nozzleCurrentTempF").show();
-    } else {
-      $("#nozzleCurrentTemp").hide();
+        nozzleTargetTemp = Math.round((nozzleTargetTempC * 9) / 5 + 32);
+        
     }
-
-    log("nozzleCurrentTemp = " + nozzleCurrentTemp);
-
-    let progressNozzleParentWidth = $("#nozzleProgressBarParent").width();
-    log("progressNozzleParentWidth = " + progressNozzleParentWidth);
-
-    // NEW: Read target temp properly from extruder info
-    let extruderTargetC = 0;
-
-    if (telemetryObject.device.extruder && telemetryObject.device.nozzle.info) {
-     const extruder = telemetryObject.device.extruder.info[0];
-      if (extruder.temp && extruder.temp > 0 && !extruder.temp < 1500) {
-          extruderTargetC = extruder.temp;
-      }
-    }
-
-    if (extruderTargetC > 500) {
-      extruderTargetC = extruderTargetC / 1000;
-    }
-
-    if (extruderTargetC < 3) {
+    else
+    {
       nozzleTargetTemp = "OFF";
       nozzleTempPercentage = 0;
       disableUI();
-    } else {
-      $("#activeTag").show();
-      nozzleTargetTempC = extruderTargetC;
-      nozzleTargetTemp = Math.round((nozzleTargetTempC * 9) / 5 + 32);
-      nozzleTempPercentage = (telemetryObject.nozzle_temper / nozzleTargetTempC) * 100;
-    }
-
-    if (nozzleTempPercentage > 100) {
-      log("Nozzle percentage over 100, adjusting..." + nozzleTempPercentage);
-      nozzleTempPercentage = 100;
-    }
-
-    $("#nozzleProgressBar").width((nozzleTempPercentage * progressNozzleParentWidth) / 100);
-
+    }    
+    
     if (nozzleTargetTemp === "OFF") {
       $("#nozzleTargetTempF").text("OFF");
       $("#nozzleTargetTempC").text("OFF");
@@ -194,7 +183,13 @@ function disableUI() {
   $("#nozzleTargetTempSymbolsF").hide();
   $("#nozzleTargetTempSymbolsC").hide();
   $("#nozzleTargetTempC").hide();
+  $("#nozzleCurrentTempC").hide();
+  $("#nozzleCurrentTempF").hide();
+  $("#nozzleCurrentTempSymbolsC").hide();
+  $("#nozzleCurrentTempSymbolsF").hide();
+  $("#nozzleCurrentTemp").hide();
 }
+
 
 function log(logText) {
   if (consoleLogging) {
