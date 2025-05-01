@@ -617,7 +617,7 @@ function connectClient() {
         const currentTime = Date.now();
   
         if (
-          printerModel === "H2D" || // For X1, always execute the command
+          printerModel === "A1" || // For X1, always execute the command
           (["P1P", "A1", "P1"].includes(printerModel) &&
             currentTime - lastPushallTime >= PUSHALL_INTERVAL) // For P1 and A1, ensure interval has passed
         ) {

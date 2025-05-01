@@ -72,10 +72,10 @@ async function updateUI(telemetryObject) {
 
     // Set current temp in UI
 
-    var nozzleCurrentTemp = Math.round((telemetryObject.device.extruder.info[1].hnow * 9) / 5 + 32);
+    var nozzleCurrentTemp = Math.round((telemetryObject.device.extruder.info[1].temp * 9) / 5 + 32);
     $("#nozzleCurrentTempF").text(nozzleCurrentTemp);
     
-    var nozzleCurrentTempC = telemetryObject.device.extruder.info[1].hnow;
+    var nozzleCurrentTempC = telemetryObject.device.extruder.info[0].temp;
 
     if (nozzleCurrentTempC > 3) {
       $("#nozzleCurrentTempC").text(nozzleCurrentTempC);
@@ -93,10 +93,10 @@ async function updateUI(telemetryObject) {
     // NEW: Read target temp properly from extruder info
     let extruderTargetC = 0;
 
-    if (telemetryObject.extruder && telemetryObject.extruder.info) {
+    if (telemetryObject.device.extruder && telemetryObject.device.nozzle.info) {
      const extruder = telemetryObject.device.extruder.info[1];
-      if (extruder.htar && extruder.htar > 0) {
-          extruderTargetC = extruder.htar;
+      if (extruder.temp && extruder.temp > 0 && extruder.temp < 1500) {
+          extruderTargetC = extruder.temp;
       }
     }
 
@@ -123,6 +123,7 @@ async function updateUI(telemetryObject) {
     $("#nozzleProgressBar").width((nozzleTempPercentage * progressNozzleParentWidth) / 100);
 
     if (nozzleTargetTemp === "OFF") {
+      $("nozzleCurrentTemp").hide();
       $("#nozzleTargetTempF").text("OFF");
       $("#nozzleTargetTempC").text("OFF");
     } else {
@@ -188,6 +189,7 @@ async function updateUI(telemetryObject) {
 }
 
 function disableUI() {
+  $("#nozzleCurrentTemp").hide();
   $("#activeTag").hide();
   $("#nozzleProgressBar").css("background-color", "grey");
   $("#nozzleProgressBar").width(0);
