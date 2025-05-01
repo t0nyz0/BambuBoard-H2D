@@ -1,6 +1,6 @@
 {
   "name": "bambuboard-h2d",
-  "version": "1.1",
+  "version": "1.2.7",
   "description": "bambu h2d printer dashboard",
   "main": "bambuConnection.js",
   "keywords": [],
