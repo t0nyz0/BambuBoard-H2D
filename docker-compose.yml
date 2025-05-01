@@ -2,7 +2,7 @@ version: '3'
 services:
   bambuboard:
     build: .
-    image: ghcr.io/t0nyz0/bambuboard:latest
+    image: ghcr.io/t0nyz0/bambuboard-h2d:latest
     ports:
       - 8080:8080
     environment:
@@ -14,7 +14,7 @@ services:
       - BAMBUBOARD_TEMP_SETTING=both
       - BAMBUBOARD_FAN_PERCENTAGES=true
       - BAMBUBOARD_FAN_ICONS=true
-      - BAMBUBOARD_PRINTER_TYPE=X1
+      - BAMBUBOARD_PRINTER_TYPE=H2D
       - BAMBUBOARD_LOGGING=false
     volumes:
       - ./config.json:/app/config.json # Mount the config file

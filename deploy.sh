@@ -8,11 +8,11 @@ if ! command -v docker &> /dev/null; then
 fi
 
 echo "Pulling the BambuBoard Docker image..."
-docker pull ghcr.io/t0nyz0/bambuboard:latest
+docker pull ghcr.io/t0nyz0/bambuboard-h2d:latest
 
 echo "Running the BambuBoard container..."
 docker run -d \
-  --name bambuboard \
+  --name bambuboard-h2d \
   -p 8080:8080 \
   -e BAMBUBOARD_HTTP_PORT=8080 \
   -e BAMBUBOARD_PRINTER_URL=10.0.0.1 \
@@ -24,6 +24,6 @@ docker run -d \
   -e BAMBUBOARD_FAN_ICONS=true \
   -e BAMBUBOARD_PRINTER_TYPE=X1 \
   -e BAMBUBOARD_LOGGING=false \
-  ghcr.io/t0nyz0/bambuboard:latest
+  ghcr.io/t0nyz0/bambuboard-h2d:latest
 
 echo "BambuBoard is now running at http://localhost:8080"
