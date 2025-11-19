@@ -77,10 +77,15 @@ async function updateUI(telemetryObject) {
     {
         $("#activeTag").show();
 
-        var nozzleCurrentTempF = Math.round((telemetryObject.device.extruder.info[1].snow * 9) / 5 + 32);
-        $("#nozzleCurrentTempF").text(nozzleCurrentTempF);
+        var nozzleCurrentTempF = Math.round((telemetryObject.nozzle_temper * 9) / 5 + 32);
+        if (nozzleCurrentTempF > 0 && nozzleCurrentTempF < 800)
+        {
+          $("#nozzleCurrentTempF").text(nozzleCurrentTempF);
+        } else {
+          $("#nozzleCurrentTempF").text("0");
+        }
 
-        var nozzleCurrentTempC = telemetryObject.device.extruder.info[1].snow;
+        var nozzleCurrentTempC = telemetryObject.nozzle_temper;
         if (nozzleCurrentTempC > 3) {
           $("#nozzleCurrentTempC").text(nozzleCurrentTempC);
           $("#nozzleCurrentTempC").show();

@@ -67,7 +67,7 @@ async function updateUI(telemetryObject) {
 
     /// Nozzle Temp
     let nozzleTargetTempF = 0;
-    let nozzleTargetTempC = telemetryObject.device.extruder.info[0].star;
+    let nozzleTargetTempC = telemetryObject.nozzle_target_temper;
     let nozzleTempPercentage = 1;
 
     // Set current temp in UI
@@ -77,11 +77,16 @@ async function updateUI(telemetryObject) {
     {
         $("#activeTag").show();
 
-        var nozzleCurrentTempF = Math.round((telemetryObject.device.extruder.info[0].snow * 9) / 5 + 32);
-        $("#nozzleCurrentTempF").text(nozzleCurrentTempF);
+        var nozzleCurrentTempF = Math.round((telemetryObject.nozzle_temper * 9) / 5 + 32);
+        if (nozzleCurrentTempF > 1 && nozzleCurrentTempF < 800)
+        {
+          $("#nozzleCurrentTempF").text(nozzleCurrentTempF);
+        } else {
+          $("#nozzleCurrentTempF").text("-");
+        }
 
-        var nozzleCurrentTempC = telemetryObject.device.extruder.info[0].snow;
-        if (nozzleCurrentTempC > 3) {
+        var nozzleCurrentTempC = telemetryObject.nozzle_temper;
+        if (nozzleCurrentTempC > 1 && nozzleCurrentTempC < 800) {
           $("#nozzleCurrentTempC").text(nozzleCurrentTempC);
           $("#nozzleCurrentTempC").show();
           $("#nozzleCurrentTempF").show();
@@ -90,7 +95,7 @@ async function updateUI(telemetryObject) {
         }
 
         log("nozzleCurrentTempF = " + nozzleCurrentTempF);
-        nozzleTempPercentage = (nozzleCurrentTempC / nozzleTargetTempC) * 100;
+        nozzleTempPercentage = (telemetryObject.nozzle_temper / nozzleTargetTempC) * 100;
         let progressNozzleParentWidth = $("#nozzleProgressBarParent").width();
         log("progressNozzleParentWidth = " + progressNozzleParentWidth);
 

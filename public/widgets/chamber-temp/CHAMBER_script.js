@@ -69,9 +69,9 @@ async function updateUI(telemetryObject) {
     $("#chamberTargetTempC").text(chamberTargetTempC);
 
     // Set current temp in UI
-    var chamberCurrentTemp = (telemetryObject.chamber_temper * 9) / 5 + 32;
+    var chamberCurrentTemp = (telemetryObject.info.temp * 9) / 5 + 32;
     $("#chamberCurrentTempF").text(chamberCurrentTemp);
-    $("#chamberCurrentTempC").text(telemetryObject.chamber_temper );
+    $("#chamberCurrentTempC").text(telemetryObject.info.temp);
 
     log("chamberCurrentTemp = " + chamberCurrentTemp);
 
